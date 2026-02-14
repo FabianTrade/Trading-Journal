@@ -62,30 +62,48 @@
 </div>
 
 <script>
-    // 1. Verbindungseinstellungen
+    // 1. Deine persönlichen Zugangsdaten (S_URL war im alten Code nicht definiert!)
     const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
     const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
 
+    // 2. Initialisierung der Cloud-Datenbank
     const db = supabase.createClient(S_URL, S_KEY);
 
-    // 2. Daten laden
     async function fetchTrades() {
-    const loadingBox = document.getElementById('loading');
-    try {
-        console.log("Verbindungsversuch zu:", S_URL);
-        const { data, error } = await db.from('trades').select('*');
-        
-        if (error) {
-            loadingBox.innerHTML = `❌ Cloud-Fehler: ${error.message} (${error.code})`;
-            return;
-        }
-        // ... Rest des Codes wie gehabt
+        const loadingBox = document.getElementById('loading');
+        try {
+            // Abfrage der Trades aus der Tabelle 'trades'
+            const { data, error } = await db.from('trades').select('*').order('id', { ascending: false });
+            
+            if (error) {
+                loadingBox.innerHTML = "❌ Cloud-Fehler: " + error.message;
+                return;
+            }
+
+            loadingBox.style.display = 'none';
+            const list = document.getElementById('trade-list');
+            list.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Noch keine Trades vorhanden. Leg los!</td></tr>';
+            } else {
+                data.forEach(t => {
+                    list.innerHTML += `
+                        <tr>
+                            <td><strong>${t.instrument}</strong></td>
+                            <td>${t.direction}</td>
+                            <td>${t.size}</td>
+                            <td>${(t.entry_price || 0).toFixed(2)} €</td>
+                            <td><button onclick="deleteTrade(${t.id})" style="color:#ef4444; border:none; background:none; cursor:pointer;">Löschen</button></td>
+                        </tr>`;
+                });
+            }
         } catch (err) {
-            loadingBox.innerHTML = "⚠️ Verbindung blockiert. Bitte Seite neu laden.";
+            loadingBox.innerHTML = "⚠️ Netzwerk-Blockade! Brave Shields AUS?";
+            console.error("Detail-Fehler:", err);
         }
     }
 
-    // 3. Trade speichern
     async function saveTrade() {
         const trade = {
             instrument: document.getElementById('instrument').value,
@@ -96,28 +114,25 @@
             setup: document.getElementById('setup').value
         };
 
-        if (!trade.instrument) { alert("Bitte Instrument eingeben!"); return; }
+        if (!trade.instrument) { alert("Bitte Asset eingeben!"); return; }
 
         const { error } = await db.from('trades').insert([trade]);
         if (error) {
             alert("Fehler beim Speichern: " + error.message);
         } else {
-            alert("Gespeichert!");
+            alert("Erfolgreich gespeichert!");
             location.reload();
         }
     }
 
-    // 4. Trade löschen
     async function deleteTrade(id) {
-        if(confirm('Diesen Trade wirklich löschen?')) {
+        if(confirm('Möchtest du diesen Trade wirklich löschen?')) {
             const { error } = await db.from('trades').delete().eq('id', id);
             if (error) alert("Fehler beim Löschen");
-            else fetchTrades();
+            else location.reload();
         }
     }
 
+    // Startet die Abfrage beim Laden der Seite
     fetchTrades();
 </script>
-
-</body>
-</html>
