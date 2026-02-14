@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trading Journal - Top Einzel Investor</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --text: #f8fafc; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
@@ -65,8 +65,10 @@
     const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
     const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
     
-    // Initialisierung der Verbindung (Variable heißt jetzt 'db')
-    const db = supabase.createClient(S_URL, S_KEY);
+    // Initialisierung mit erweiterten Optionen gegen CORS-Fehler
+    const db = supabase.createClient(S_URL, S_KEY, {
+        auth: { persistSession: false }
+    });
 
     async function saveTrade() {
         const trade = {
@@ -78,46 +80,41 @@
             setup: document.getElementById('setup').value
         };
 
-        const { error } = await db.from('trades').insert([trade]);
-        
-        if (error) {
-            alert('Fehler: ' + error.message);
-        } else {
+        try {
+            const { error } = await db.from('trades').insert([trade]);
+            if (error) throw error;
             alert('Gespeichert!');
             document.querySelectorAll('input, textarea').forEach(el => el.value = '');
             fetchTrades();
+        } catch (err) {
+            console.error(err);
+            alert('Fehler: ' + (err.message || "Verbindung zur Cloud blockiert. Prüfe Brave Shields!"));
         }
     }
 
     async function fetchTrades() {
         const loadingBox = document.getElementById('loading');
-        if (loadingBox) loadingBox.style.display = 'block';
+        try {
+            const { data, error } = await db.from('trades').select('*').order('id', { ascending: false });
+            if (error) throw error;
+            if (loadingBox) loadingBox.style.display = 'none';
 
-        const { data, error } = await db
-            .from('trades')
-            .select('*')
-            .order('id', { ascending: false });
-
-        if (loadingBox) loadingBox.style.display = 'none';
-
-        if (error) {
-            console.error('Ladefehler:', error);
-            return;
+            const list = document.getElementById('trade-list');
+            list.innerHTML = '';
+            data.forEach(t => {
+                list.innerHTML += `
+                    <tr>
+                        <td><strong>${t.instrument}</strong></td>
+                        <td>${t.direction}</td>
+                        <td>${t.size}</td>
+                        <td class="price">${(t.entry_price || 0).toFixed(2)} €</td>
+                        <td><button class="delete-btn" onclick="deleteTrade(${t.id})">Löschen</button></td>
+                    </tr>
+                `;
+            });
+        } catch (err) {
+            console.error("Ladefehler:", err);
         }
-
-        const list = document.getElementById('trade-list');
-        list.innerHTML = '';
-        data.forEach(t => {
-            list.innerHTML += `
-                <tr>
-                    <td><strong>${t.instrument}</strong></td>
-                    <td>${t.direction}</td>
-                    <td>${t.size}</td>
-                    <td class="price">${(t.entry_price || 0).toFixed(2)} €</td>
-                    <td><button class="delete-btn" onclick="deleteTrade(${t.id})">Löschen</button></td>
-                </tr>
-            `;
-        });
     }
 
     async function deleteTrade(id) {
@@ -127,7 +124,6 @@
         }
     }
 
-    // Start beim Laden der Seite
     fetchTrades();
 </script>
 
