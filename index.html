@@ -1,9 +1,9 @@
 <script>
-    // Nutze exakt diese Variablen
+    // URL und KEY genau prüfen - hier liegt der Fehler
     const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
     const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
-
-    // Initialisierung
+    
+    // Initialisierung der Datenbank-Verbindung
     const db = supabase.createClient(S_URL, S_KEY);
 
     async function saveTrade() {
@@ -16,31 +16,49 @@
             setup: document.getElementById('setup').value
         };
 
-        // Versuch mit Fetch-API direkt (manchmal stabiler als die Library)
-        try {
-            const response = await fetch(`${S_URL}/rest/v1/trades`, {
-                method: 'POST',
-                headers: {
-                    'apikey': S_KEY,
-                    'Authorization': `Bearer ${S_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=minimal'
-                },
-                body: JSON.stringify(trade)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message);
-            }
-
-            alert('Erfolg! Position gespeichert.');
+        const { error } = await db.from('trades').insert([trade]);
+        
+        if (error) {
+            alert('Fehler: ' + error.message);
+        } else {
+            alert('Gespeichert!');
+            document.querySelectorAll('input, textarea').forEach(el => el.value = '');
             fetchTrades();
-        } catch (err) {
-            console.error(err);
-            alert('Immer noch Blockiert. Bitte lies den Text unter dem Code!');
         }
     }
-    
-    // ... Rest der fetchTrades Funktion bleibt gleich ...
+
+    async function fetchTrades() {
+        const { data, error } = await db.from('trades').select('*').order('id', { ascending: false });
+        
+        const loading = document.getElementById('loading');
+        if (loading) loading.style.display = 'none';
+
+        if (error) {
+            console.error('Ladefehler:', error);
+            return;
+        }
+
+        const list = document.getElementById('trade-list');
+        list.innerHTML = '';
+        data.forEach(t => {
+            list.innerHTML += `
+                <tr>
+                    <td><strong>${t.instrument}</strong></td>
+                    <td>${t.direction}</td>
+                    <td>${t.size}</td>
+                    <td>${(t.entry_price || 0).toFixed(2)} €</td>
+                    <td><button onclick="deleteTrade(${t.id})" style="color:red; background:none; border:none; cursor:pointer;">Löschen</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    async function deleteTrade(id) {
+        if(confirm('Löschen?')) {
+            await db.from('trades').delete().eq('id', id);
+            fetchTrades();
+        }
+    }
+
+    fetchTrades();
 </script>
