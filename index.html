@@ -62,12 +62,13 @@
 </div>
 
 <script>
-  // URL und der SEHR LANGE Key von Screenshot 52
-   const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
-   const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
+    // 1. Verbindungseinstellungen (Exakt für dein Projekt)
+    const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
 
     const db = supabase.createClient(S_URL, S_KEY);
 
+    // 2. Daten aus der Cloud laden
     async function fetchTrades() {
         const loadingBox = document.getElementById('loading');
         try {
@@ -91,16 +92,17 @@
                             <td><strong>${t.instrument}</strong></td>
                             <td>${t.direction}</td>
                             <td>${t.size}</td>
-                            <td>${(t.entry_price || 0).toFixed(2)} €</td>
-                            <td><button onclick="deleteTrade(${t.id})" style="color:#ef4444; border:none; background:none; cursor:pointer;">Löschen</button></td>
+                            <td class="price">${(t.entry_price || 0).toFixed(2)} €</td>
+                            <td><button class="delete-btn" onclick="deleteTrade(${t.id})">Löschen</button></td>
                         </tr>`;
                 });
             }
         } catch (err) {
-            loadingBox.innerHTML = "⚠️ Verbindung wird blockiert. Key korrekt?";
+            loadingBox.innerHTML = "⚠️ Verbindung blockiert. Bitte Seite neu laden.";
         }
     }
 
+    // 3. Neuen Trade speichern
     async function saveTrade() {
         const trade = {
             instrument: document.getElementById('instrument').value,
@@ -111,11 +113,28 @@
             setup: document.getElementById('setup').value
         };
 
+        if (!trade.instrument) { alert("Bitte Asset-Namen eingeben!"); return; }
+
         const { error } = await db.from('trades').insert([trade]);
-        if (error) alert("Fehler: " + error.message);
-        else { alert("Gespeichert!"); location.reload(); }
+        
+        if (error) {
+            alert("Fehler beim Speichern: " + error.message);
+        } else {
+            alert("Erfolgreich gespeichert!");
+            location.reload(); // Seite neu laden um Liste zu aktualisieren
+        }
     }
 
+    // 4. Trade löschen
+    async function deleteTrade(id) {
+        if(confirm('Diesen Trade wirklich löschen?')) {
+            const { error } = await db.from('trades').delete().eq('id', id);
+            if (error) alert("Fehler beim Löschen");
+            else location.reload();
+        }
+    }
+
+    // Starten
     fetchTrades();
 </script>
 
