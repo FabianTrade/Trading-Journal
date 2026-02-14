@@ -62,19 +62,19 @@
 </div>
 
 <script>
-  const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
-    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
+  // URL und der SEHR LANGE Key von Screenshot 52
+    const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
+    const S_KEY = 'DEIN_KOPIERTER_LANGER_KEY_HIER_EINFÜGEN';
 
     const db = supabase.createClient(S_URL, S_KEY);
 
     async function fetchTrades() {
         const loadingBox = document.getElementById('loading');
         try {
-            console.log("Starte Abfrage...");
             const { data, error } = await db.from('trades').select('*').order('id', { ascending: false });
             
             if (error) {
-                loadingBox.innerHTML = "❌ Fehler von Supabase: " + error.message;
+                loadingBox.innerHTML = "❌ Fehler: " + error.message;
                 return;
             }
 
@@ -82,23 +82,22 @@
             const list = document.getElementById('trade-list');
             list.innerHTML = '';
             
-            if (data.length === 0) {
-                list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Noch keine Trades eingetragen. Gib oben deinen ersten Trade ein!</td></tr>';
+            if (!data || data.length === 0) {
+                list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Noch keine Trades vorhanden. Leg los!</td></tr>';
+            } else {
+                data.forEach(t => {
+                    list.innerHTML += `
+                        <tr>
+                            <td><strong>${t.instrument}</strong></td>
+                            <td>${t.direction}</td>
+                            <td>${t.size}</td>
+                            <td>${(t.entry_price || 0).toFixed(2)} €</td>
+                            <td><button onclick="deleteTrade(${t.id})" style="color:#ef4444; border:none; background:none; cursor:pointer;">Löschen</button></td>
+                        </tr>`;
+                });
             }
-
-            data.forEach(t => {
-                list.innerHTML += `
-                    <tr>
-                        <td><strong>${t.instrument}</strong></td>
-                        <td>${t.direction}</td>
-                        <td>${t.size}</td>
-                        <td>${(t.entry_price || 0).toFixed(2)} €</td>
-                        <td><button onclick="deleteTrade(${t.id})" style="color:#ef4444; border:none; background:none; cursor:pointer;">Löschen</button></td>
-                    </tr>`;
-            });
         } catch (err) {
-            console.error(err);
-            loadingBox.innerHTML = "⚠️ Netzwerk-Blockade! Brave Shields AUS? Adblocker AUS?";
+            loadingBox.innerHTML = "⚠️ Verbindung wird blockiert. Key korrekt?";
         }
     }
 
