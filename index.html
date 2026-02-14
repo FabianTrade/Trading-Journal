@@ -62,21 +62,18 @@
 </div>
 
 <script>
-    // 1. Deine persönlichen Zugangsdaten (S_URL war im alten Code nicht definiert!)
     const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
     const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
 
-    // 2. Initialisierung der Cloud-Datenbank
     const db = supabase.createClient(S_URL, S_KEY);
 
     async function fetchTrades() {
         const loadingBox = document.getElementById('loading');
         try {
-            // Abfrage der Trades aus der Tabelle 'trades'
             const { data, error } = await db.from('trades').select('*').order('id', { ascending: false });
             
             if (error) {
-                loadingBox.innerHTML = "❌ Cloud-Fehler: " + error.message;
+                loadingBox.innerHTML = "❌ Fehler: " + error.message;
                 return;
             }
 
@@ -99,8 +96,7 @@
                 });
             }
         } catch (err) {
-            loadingBox.innerHTML = "⚠️ Netzwerk-Blockade! Brave Shields AUS?";
-            console.error("Detail-Fehler:", err);
+            loadingBox.innerHTML = "⚠️ Verbindung blockiert (Brave Shields?).";
         }
     }
 
@@ -117,22 +113,18 @@
         if (!trade.instrument) { alert("Bitte Asset eingeben!"); return; }
 
         const { error } = await db.from('trades').insert([trade]);
-        if (error) {
-            alert("Fehler beim Speichern: " + error.message);
-        } else {
-            alert("Erfolgreich gespeichert!");
+        if (error) alert("Fehler: " + error.message);
+        else { alert("Gespeichert!"); location.reload(); }
+    }
+
+    async function deleteTrade(id) {
+        if(confirm('Wirklich löschen?')) {
+            await db.from('trades').delete().eq('id', id);
             location.reload();
         }
     }
 
-    async function deleteTrade(id) {
-        if(confirm('Möchtest du diesen Trade wirklich löschen?')) {
-            const { error } = await db.from('trades').delete().eq('id', id);
-            if (error) alert("Fehler beim Löschen");
-            else location.reload();
-        }
-    }
-
-    // Startet die Abfrage beim Laden der Seite
     fetchTrades();
 </script>
+</body>
+</html>
