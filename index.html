@@ -62,6 +62,7 @@
 </div>
 
 <script>
+    // Korrigierte URL aus deinem Screenshot
     const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
     const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
 
@@ -70,7 +71,7 @@
     async function fetchTrades() {
         const loadingBox = document.getElementById('loading');
         try {
-            const { data, error } = await db.from('trades').select('*');
+            const { data, error } = await db.from('trades').select('*').order('created_at', { ascending: false });
             if (error) throw error;
             
             loadingBox.style.display = 'none';
@@ -81,16 +82,52 @@
                 list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Noch keine Trades vorhanden. Leg los!</td></tr>';
             } else {
                 data.forEach(t => {
-                    list.innerHTML += `<tr><td>${t.instrument}</td><td>${t.direction}</td><td>${t.size}</td><td>${t.entry_price} €</td><td><button onclick="deleteTrade(${t.id})">X</button></td></tr>`;
+                    list.innerHTML += `
+                        <tr>
+                            <td><strong>${t.instrument}</strong></td>
+                            <td>${t.direction}</td>
+                            <td>${t.size}</td>
+                            <td>${t.entry_price.toFixed(2)} €</td>
+                            <td><button class="delete-btn" onclick="deleteTrade(${t.id})">Löschen</button></td>
+                        </tr>`;
                 });
             }
         } catch (err) {
-            loadingBox.innerHTML = "❌ Cloud-Fehler: " + err.message;
+            loadingBox.innerHTML = "❌ Fehler: " + err.message;
+            console.error(err);
         }
     }
-    // (Restliche Funktionen saveTrade und deleteTrade wie vorher)
+
+    async function saveTrade() {
+        const trade = {
+            instrument: document.getElementById('instrument').value,
+            direction: document.getElementById('direction').value,
+            size: parseFloat(document.getElementById('size').value) || 0,
+            entry_price: parseFloat(document.getElementById('entry_price').value) || 0,
+            result: parseFloat(document.getElementById('result').value) || 0,
+            setup: document.getElementById('setup').value
+        };
+
+        if (!trade.instrument) { alert("Bitte Asset-Namen eingeben!"); return; }
+
+        const { error } = await db.from('trades').insert([trade]);
+        if (error) {
+            alert("Speichern fehlgeschlagen: " + error.message);
+        } else {
+            alert("Erfolgreich gespeichert!");
+            location.reload();
+        }
+    }
+
+    async function deleteTrade(id) {
+        if (confirm("Trade wirklich löschen?")) {
+            const { error } = await db.from('trades').delete().eq('id', id);
+            if (error) alert("Löschen fehlgeschlagen");
+            else location.reload();
+        }
+    }
+
     fetchTrades();
 </script>
-
 </body>
 </html>
