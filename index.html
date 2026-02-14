@@ -70,33 +70,16 @@
 
     // 2. Daten laden
     async function fetchTrades() {
-        const loadingBox = document.getElementById('loading');
-        try {
-            const { data, error } = await db.from('trades').select('*').order('id', { ascending: false });
-            
-            if (error) {
-                loadingBox.innerHTML = "❌ Fehler: " + error.message;
-                return;
-            }
-
-            loadingBox.style.display = 'none';
-            const list = document.getElementById('trade-list');
-            list.innerHTML = '';
-            
-            if (!data || data.length === 0) {
-                list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Noch keine Trades vorhanden. Leg los!</td></tr>';
-            } else {
-                data.forEach(t => {
-                    list.innerHTML += `
-                        <tr>
-                            <td><strong>${t.instrument}</strong></td>
-                            <td>${t.direction}</td>
-                            <td>${t.size}</td>
-                            <td class="price">${(t.entry_price || 0).toFixed(2)} €</td>
-                            <td><button class="delete-btn" onclick="deleteTrade(${t.id})">Löschen</button></td>
-                        </tr>`;
-                });
-            }
+    const loadingBox = document.getElementById('loading');
+    try {
+        console.log("Verbindungsversuch zu:", S_URL);
+        const { data, error } = await db.from('trades').select('*');
+        
+        if (error) {
+            loadingBox.innerHTML = `❌ Cloud-Fehler: ${error.message} (${error.code})`;
+            return;
+        }
+        // ... Rest des Codes wie gehabt
         } catch (err) {
             loadingBox.innerHTML = "⚠️ Verbindung blockiert. Bitte Seite neu laden.";
         }
