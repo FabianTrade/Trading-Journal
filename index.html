@@ -62,45 +62,30 @@
 </div>
 
 <script>
-   const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
+  const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
     const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
 
-    // Wir bauen den Client ohne Session-Speicherung, um Browser-Sperren zu umgehen
-    const db = supabase.createClient(S_URL, S_KEY, {
-        auth: { persistSession: false }
-    });
-
-    async function saveTrade() {
-        const trade = {
-            instrument: document.getElementById('instrument').value,
-            direction: document.getElementById('direction').value,
-            size: parseFloat(document.getElementById('size').value) || 0,
-            entry_price: parseFloat(document.getElementById('entry_price').value) || 0,
-            result: parseFloat(document.getElementById('result').value) || 0,
-            setup: document.getElementById('setup').value
-        };
-
-        try {
-            const { data, error } = await db.from('trades').insert([trade]).select();
-            if (error) throw error;
-            alert('Erfolgreich im Journal gespeichert!');
-            fetchTrades();
-        } catch (err) {
-            console.error('Fehler-Details:', err);
-            alert('Verbindungsproblem: Bitte schalte Brave Shields AUS oder teste ein Inkognito-Fenster.');
-        }
-    }
+    const db = supabase.createClient(S_URL, S_KEY);
 
     async function fetchTrades() {
+        const loadingBox = document.getElementById('loading');
         try {
+            console.log("Starte Abfrage...");
             const { data, error } = await db.from('trades').select('*').order('id', { ascending: false });
-            if (error) throw error;
             
-            const loading = document.getElementById('loading');
-            if (loading) loading.style.display = 'none';
+            if (error) {
+                loadingBox.innerHTML = "❌ Fehler von Supabase: " + error.message;
+                return;
+            }
 
+            loadingBox.style.display = 'none';
             const list = document.getElementById('trade-list');
             list.innerHTML = '';
+            
+            if (data.length === 0) {
+                list.innerHTML = '<tr><td colspan="5" style="text-align:center;">Noch keine Trades eingetragen. Gib oben deinen ersten Trade ein!</td></tr>';
+            }
+
             data.forEach(t => {
                 list.innerHTML += `
                     <tr>
@@ -112,15 +97,24 @@
                     </tr>`;
             });
         } catch (err) {
-            console.error('Ladefehler:', err);
+            console.error(err);
+            loadingBox.innerHTML = "⚠️ Netzwerk-Blockade! Brave Shields AUS? Adblocker AUS?";
         }
     }
 
-    async function deleteTrade(id) {
-        if(confirm('Löschen?')) {
-            await db.from('trades').delete().eq('id', id);
-            fetchTrades();
-        }
+    async function saveTrade() {
+        const trade = {
+            instrument: document.getElementById('instrument').value,
+            direction: document.getElementById('direction').value,
+            size: parseFloat(document.getElementById('size').value) || 0,
+            entry_price: parseFloat(document.getElementById('entry_price').value) || 0,
+            result: parseFloat(document.getElementById('result').value) || 0,
+            setup: document.getElementById('setup').value
+        };
+
+        const { error } = await db.from('trades').insert([trade]);
+        if (error) alert("Fehler: " + error.message);
+        else { alert("Gespeichert!"); location.reload(); }
     }
 
     fetchTrades();
