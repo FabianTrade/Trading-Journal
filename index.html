@@ -62,13 +62,16 @@
 </div>
 
 <script>
+    // 1. Verbindungseinstellungen
     const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
     const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
 
     const db = supabase.createClient(S_URL, S_KEY);
 
+    // 2. Daten laden
     async function fetchTrades() {
         const loadingBox = document.getElementById('loading');
+        const list = document.getElementById('trade-list');
         try {
             const { data, error } = await db.from('trades').select('*').order('id', { ascending: false });
             
@@ -78,7 +81,6 @@
             }
 
             loadingBox.style.display = 'none';
-            const list = document.getElementById('trade-list');
             list.innerHTML = '';
             
             if (!data || data.length === 0) {
@@ -100,6 +102,7 @@
         }
     }
 
+    // 3. Trade speichern
     async function saveTrade() {
         const trade = {
             instrument: document.getElementById('instrument').value,
@@ -121,6 +124,7 @@
         }
     }
 
+    // 4. Trade löschen
     async function deleteTrade(id) {
         if(confirm('Diesen Trade wirklich löschen?')) {
             const { error } = await db.from('trades').delete().eq('id', id);
