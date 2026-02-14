@@ -62,16 +62,16 @@
 </div>
 
 <script>
-    // Korrigierte URL aus deinem Screenshot
     const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
     const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
 
     const db = supabase.createClient(S_URL, S_KEY);
 
+    // 1. Daten laden
     async function fetchTrades() {
         const loadingBox = document.getElementById('loading');
         try {
-            const { data, error } = await db.from('trades').select('*').order('created_at', { ascending: false });
+            const { data, error } = await db.from('trades').select('*').order('id', { ascending: false });
             if (error) throw error;
             
             loadingBox.style.display = 'none';
@@ -87,17 +87,17 @@
                             <td><strong>${t.instrument}</strong></td>
                             <td>${t.direction}</td>
                             <td>${t.size}</td>
-                            <td>${t.entry_price.toFixed(2)} €</td>
+                            <td class="price">${(t.entry_price || 0).toFixed(2)} €</td>
                             <td><button class="delete-btn" onclick="deleteTrade(${t.id})">Löschen</button></td>
                         </tr>`;
                 });
             }
         } catch (err) {
             loadingBox.innerHTML = "❌ Fehler: " + err.message;
-            console.error(err);
         }
     }
 
+    // 2. Trade speichern
     async function saveTrade() {
         const trade = {
             instrument: document.getElementById('instrument').value,
@@ -108,26 +108,28 @@
             setup: document.getElementById('setup').value
         };
 
-        if (!trade.instrument) { alert("Bitte Asset-Namen eingeben!"); return; }
+        if (!trade.instrument) { alert("Bitte Instrument eingeben!"); return; }
 
         const { error } = await db.from('trades').insert([trade]);
         if (error) {
-            alert("Speichern fehlgeschlagen: " + error.message);
+            alert("Fehler beim Speichern: " + error.message);
         } else {
-            alert("Erfolgreich gespeichert!");
+            alert("Gespeichert!");
             location.reload();
         }
     }
 
+    // 3. Trade löschen
     async function deleteTrade(id) {
-        if (confirm("Trade wirklich löschen?")) {
+        if(confirm('Diesen Trade wirklich löschen?')) {
             const { error } = await db.from('trades').delete().eq('id', id);
-            if (error) alert("Löschen fehlgeschlagen");
+            if (error) alert("Fehler beim Löschen");
             else location.reload();
         }
     }
 
     fetchTrades();
 </script>
+
 </body>
 </html>
