@@ -73,7 +73,7 @@
             const { data, error } = await db.from('trades').select('*').order('id', { ascending: false });
             
             if (error) {
-                loadingBox.innerHTML = "❌ Fehler: " + error.message;
+                loadingBox.innerHTML = `❌ Cloud-Fehler: ${error.message}`;
                 return;
             }
 
@@ -90,13 +90,13 @@
                             <td><strong>${t.instrument}</strong></td>
                             <td>${t.direction}</td>
                             <td>${t.size}</td>
-                            <td>${(t.entry_price || 0).toFixed(2)} €</td>
-                            <td><button onclick="deleteTrade(${t.id})" style="color:#ef4444; border:none; background:none; cursor:pointer;">Löschen</button></td>
+                            <td class="price">${(t.entry_price || 0).toFixed(2)} €</td>
+                            <td><button class="delete-btn" onclick="deleteTrade(${t.id})">Löschen</button></td>
                         </tr>`;
                 });
             }
         } catch (err) {
-            loadingBox.innerHTML = "⚠️ Verbindung blockiert (Brave Shields?).";
+            loadingBox.innerHTML = "⚠️ Verbindung blockiert. Bitte Seite neu laden.";
         }
     }
 
@@ -110,21 +110,27 @@
             setup: document.getElementById('setup').value
         };
 
-        if (!trade.instrument) { alert("Bitte Asset eingeben!"); return; }
+        if (!trade.instrument) { alert("Bitte Instrument eingeben!"); return; }
 
         const { error } = await db.from('trades').insert([trade]);
-        if (error) alert("Fehler: " + error.message);
-        else { alert("Gespeichert!"); location.reload(); }
+        if (error) {
+            alert("Fehler beim Speichern: " + error.message);
+        } else {
+            alert("Gespeichert!");
+            location.reload();
+        }
     }
 
     async function deleteTrade(id) {
-        if(confirm('Wirklich löschen?')) {
-            await db.from('trades').delete().eq('id', id);
-            location.reload();
+        if(confirm('Diesen Trade wirklich löschen?')) {
+            const { error } = await db.from('trades').delete().eq('id', id);
+            if (error) alert("Fehler beim Löschen");
+            else location.reload();
         }
     }
 
     fetchTrades();
 </script>
+
 </body>
 </html>
