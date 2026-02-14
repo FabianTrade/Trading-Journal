@@ -62,11 +62,11 @@
 </div>
 
 <script>
-    // DEINE KONFIGURATION (Bereits ausgefüllt)
-    const SUPABASE_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
+    const S_URL = 'https://epomvhikguclvpqzxhn.supabase.co';
+    const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwb212aGlrZ3VjbHZwb2d6eGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNzQ5MzcsImV4cCI6MjA4NjY1MDkzN30.559MP90eDQfyGN8ZL_6Dl8SYpNOs6JxYMnW_wJUCBXI';
     
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Initialisierung der Verbindung (Variable heißt jetzt 'db')
+    const db = supabase.createClient(S_URL, S_KEY);
 
     async function saveTrade() {
         const trade = {
@@ -75,31 +75,33 @@
             size: parseFloat(document.getElementById('size').value) || 0,
             entry_price: parseFloat(document.getElementById('entry_price').value) || 0,
             result: parseFloat(document.getElementById('result').value) || 0,
-            setup: document.getElementById('setup').value,
-            created_at: new Date()
+            setup: document.getElementById('setup').value
         };
 
-        const { error } = await supabase.from('trades').insert([trade]);
+        const { error } = await db.from('trades').insert([trade]);
         
         if (error) {
-            alert('Fehler beim Speichern: ' + error.message);
+            alert('Fehler: ' + error.message);
         } else {
+            alert('Gespeichert!');
             document.querySelectorAll('input, textarea').forEach(el => el.value = '');
             fetchTrades();
         }
     }
 
     async function fetchTrades() {
-        document.getElementById('loading').style.display = 'block';
-        const { data, error } = await supabase
+        const loadingBox = document.getElementById('loading');
+        if (loadingBox) loadingBox.style.display = 'block';
+
+        const { data, error } = await db
             .from('trades')
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('id', { ascending: false });
 
-        document.getElementById('loading').style.display = 'none';
+        if (loadingBox) loadingBox.style.display = 'none';
 
         if (error) {
-            console.error('Fehler beim Laden:', error);
+            console.error('Ladefehler:', error);
             return;
         }
 
@@ -111,7 +113,7 @@
                     <td><strong>${t.instrument}</strong></td>
                     <td>${t.direction}</td>
                     <td>${t.size}</td>
-                    <td class="price">${t.entry_price.toFixed(2)} €</td>
+                    <td class="price">${(t.entry_price || 0).toFixed(2)} €</td>
                     <td><button class="delete-btn" onclick="deleteTrade(${t.id})">Löschen</button></td>
                 </tr>
             `;
@@ -119,15 +121,15 @@
     }
 
     async function deleteTrade(id) {
-        if(confirm('Diesen Eintrag wirklich löschen?')) {
-            await supabase.from('trades').delete().eq('id', id);
+        if(confirm('Löschen?')) {
+            await db.from('trades').delete().eq('id', id);
             fetchTrades();
         }
     }
 
+    // Start beim Laden der Seite
     fetchTrades();
 </script>
 
 </body>
 </html>
-
